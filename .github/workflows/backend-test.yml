@@ -105,12 +105,26 @@ jobs:
         run: brew install tarantool
 
       # Setup etcd
-      - name: Install etcd
-        uses: ./.github/actions/setup-etcd
+      - name: Install etcd (linux)
         if: runner.os == 'Linux'
+        uses: ./.github/actions/setup-etcd
         with:
           etcd-version: v2.3.8
           install-prefix: etcd-v2.3.8
+      - name: Install etcd (macos)
+        if: runner.os == 'macOS'
+        env:
+          BASE_URL: "https://github.com/etcd-io/etcd/releases/download"
+          ETCD_VER: v2.3.8
+          INSTALL_PREFIX: etcd-v2.3.8
+        run: |
+          mkdir -p ${INSTALL_PREFIX}
+          curl -L ${BASE_URL}/${ETCD_VER}/etcd-${ETCD_VER}-darwin-amd64.zip -o /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
+          unzip /tmp/etcd-${ETCD_VER}-darwin-amd64.zip -d /tmp
+          mv /tmp/etcd-${ETCD_VER}-darwin-amd64/* ${INSTALL_PREFIX}
+          # etcd-${ETCD_VER}/etcdctl
+          # etcd-${ETCD_VER}/etcd
+          echo "${INSTALL_PREFIX}" >> $GITHUB_PATH
 
       # Setup luatest
       - name: Cache rocks
@@ -143,7 +157,7 @@ jobs:
             export ETCD_PATH
           fi
 
-          ulimit -n 100000 || true
+          ulimit -n 12288 || true
           ulimit -n
           .rocks/bin/luatest -v
 
