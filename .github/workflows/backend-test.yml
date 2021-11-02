@@ -85,15 +85,24 @@ jobs:
       fail-fast: false
       matrix:
         tarantool: ['1.10', '2.7', '2.8', '2.9']
-    runs-on: ubuntu-18.04
+        os: [ubuntu-18.04]
+        include:
+        - os: macos-latest
+          tarantool: null # we don't choose version in brew
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
       - uses: actions/checkout@v2
       - uses: tarantool/setup-tarantool@v1
+        if: runner.os == 'Linux'
         with:
           tarantool-version: '${{ matrix.tarantool }}'
+
+      - name: Install tarantool (brew)
+        if: runner.os == 'macOS'
+        run: brew install tarantool
 
       # Setup etcd
       - name: Install etcd
@@ -109,7 +118,7 @@ jobs:
         id: cache-rocks
         with:
           path: .rocks/
-          key: test-rocks-${{ hashFiles('*.rockspec') }}-03
+          key: test-rocks-${{ runner.os }}-${{ hashFiles('*.rockspec') }}-03
       -
         run: tarantoolctl rocks install luatest 0.5.6
         if: steps.cache-rocks.outputs.cache-hit != 'true'
@@ -128,7 +137,15 @@ jobs:
         if: steps.cache-pytest.outputs.cache-hit != 'true'
 
       - run: tarantoolctl rocks make
-      - run: .rocks/bin/luatest -v
+      - run: |
+          ETCD_PATH=$(which etcd || true)
+          if [ -n "$ETCD_PATH" ]; then
+            export ETCD_PATH
+          fi
+
+          ulimit -n 100000 || true
+          ulimit -n
+          .rocks/bin/luatest -v
 
       - name: Run pytest -v
         run: |

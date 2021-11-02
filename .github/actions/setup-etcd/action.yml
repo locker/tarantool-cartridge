@@ -32,3 +32,4 @@ runs:
         set -x
         ${INSTALL_PREFIX}/etcd --version
         ${INSTALL_PREFIX}/etcdctl version
+        echo "${INSTALL_PREFIX}" >> $GITHUB_PATH
