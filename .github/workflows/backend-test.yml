@@ -156,10 +156,9 @@ jobs:
           if [ -n "$ETCD_PATH" ]; then
             export ETCD_PATH
           fi
-          sudo launchctl limit maxfiles 1000000 1000000
-          ulimit -n 1000000 || true
+          ulimit -n 12288 || true
           ulimit -n
-          .rocks/bin/luatest -v
+          .rocks/bin/luatest
 
       - name: Run pytest -v
         run: |
