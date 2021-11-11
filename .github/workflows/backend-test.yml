@@ -158,7 +158,8 @@ jobs:
           fi
           ulimit -n 12288 || true
           ulimit -n
-          .rocks/bin/luatest
+
+      - run: .rocks/bin/luatest
 
       - name: Run pytest -v
         run: |
