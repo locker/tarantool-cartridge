@@ -87,7 +87,7 @@ jobs:
         tarantool: ['1.10', '2.7', '2.8', '2.9']
         os: [ubuntu-18.04]
         include:
-        - os: macos-latest
+        - os: macos-11
           tarantool: null # we don't choose version in brew
     runs-on: ${{ matrix.os }}
     steps:
