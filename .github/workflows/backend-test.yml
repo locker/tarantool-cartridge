@@ -159,7 +159,7 @@ jobs:
           ulimit -n 12288 || true
           ulimit -n
 
-      - run: .rocks/bin/luatest -p 'unit*'
+      - run: .rocks/bin/luatest -p 'integration.*'
 
       - name: Run pytest -v
         run: |
