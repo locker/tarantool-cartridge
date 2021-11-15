@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_vshardless'),
@@ -22,12 +22,12 @@ g.before_all = function()
             error('Requiring vshard is prohibited in this test', 0)
         end
     ]])
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
-end
+end)
 
 function g.test_edit_replicaset()
     local replica_uuid = g.cluster.replicasets[1].uuid

@@ -7,7 +7,7 @@ local helpers = require('test.helper')
 local cluster
 local servers
 
-g.before_all = function()
+g.before_all(function()
     cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = false,
@@ -49,9 +49,9 @@ g.before_all = function()
         server:start()
     end
     cluster:start()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     for _, server in pairs(servers or {}) do
         server:stop()
     end
@@ -60,7 +60,7 @@ g.after_all = function()
     fio.rmtree(cluster.datadir)
     cluster = nil
     servers = nil
-end
+end)
 
 g.test_patch_topology = function()
     -- t.skip("Fails due to https://github.com/tarantool/tarantool/issues/4527")

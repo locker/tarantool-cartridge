@@ -6,7 +6,7 @@ local helpers = require('test.helper')
 
 local cluster
 
-g.before_all = function()
+g.before_all(function()
     cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_multisharding'),
@@ -27,14 +27,14 @@ g.before_all = function()
     })
 
     cluster:start()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     cluster:stop()
 
     fio.rmtree(cluster.datadir)
     cluster = nil
-end
+end)
 
 g.test_query = function()
     local ret = cluster.main_server:graphql({

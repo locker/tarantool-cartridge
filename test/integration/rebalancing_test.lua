@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_basic'),
@@ -58,12 +58,12 @@ g.before_all = function()
             )
         end
     ]])
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
-end
+end)
 
 local function set_weight(srv, weight)
     g.cluster.main_server:graphql({

@@ -13,7 +13,7 @@ local errors = require('errors')
 local pool = require('cartridge.pool')
 local cluster_cookie = require('cartridge.cluster-cookie')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_basic'),
@@ -54,12 +54,12 @@ g.before_all = function()
 
     cluster_cookie.init(g.cluster.datadir)
     cluster_cookie.set_cookie(g.cluster.cookie)
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
-end
+end)
 
 local function assert_err_equals(map, uri, expected1, expected2)
     if map[uri] == nil then

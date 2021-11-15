@@ -8,7 +8,7 @@ local utils = require('cartridge.utils')
 local yaml = require('yaml')
 local log = require('log')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_basic'),
@@ -28,12 +28,12 @@ g.before_all = function()
     })
 
     g.cluster:start()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
-end
+end)
 
 function g.test_api()
     local res = g.cluster.main_server:graphql({query = [[{

@@ -7,7 +7,7 @@ local helpers = require('test.helper')
 
 local cluster
 
-g.before_all = function()
+g.before_all(function()
     cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = false,
@@ -25,11 +25,12 @@ g.before_all = function()
         },
     })
     cluster:start()
-end
-g.after_all = function()
+end)
+
+g.after_all(function()
     cluster:stop()
     fio.rmtree(cluster.datadir)
-end
+end)
 
 g.test_rename_replicaset = function()
     local server = cluster.main_server
