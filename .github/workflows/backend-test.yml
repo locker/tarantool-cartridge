@@ -84,8 +84,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tarantool: ['1.10', '2.7', '2.8', '2.9']
-        os: [ubuntu-18.04]
+        # tarantool: ['1.10', '2.7', '2.8', '2.9']
+        # os: [ubuntu-18.04]
         include:
         - os: macos-11
           tarantool: null # we don't choose version in brew
@@ -159,7 +159,7 @@ jobs:
           ulimit -n 12288 || true
           ulimit -n
 
-      - run: .rocks/bin/luatest
+      - run: .rocks/bin/luatest -p 'unit*'
 
       - name: Run pytest -v
         run: |
