@@ -122,8 +122,8 @@ jobs:
           curl -L ${BASE_URL}/${ETCD_VER}/etcd-${ETCD_VER}-darwin-amd64.zip -o /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
           unzip /tmp/etcd-${ETCD_VER}-darwin-amd64.zip -d /tmp
           mv /tmp/etcd-${ETCD_VER}-darwin-amd64/ ${INSTALL_PREFIX}/
-          etcd-${ETCD_VER}/etcdctl
-          etcd-${ETCD_VER}/etcd
+          etcd-${ETCD_VER}/etcdctl --version
+          etcd-${ETCD_VER}/etcd --version
           echo "${INSTALL_PREFIX}" >> $GITHUB_PATH
 
       # Setup luatest
@@ -156,6 +156,7 @@ jobs:
           if [ -n "$ETCD_PATH" ]; then
             export ETCD_PATH
           fi
+          echo $ETCD_PATH
           ulimit -n 12288 || true
           ulimit -n
 
