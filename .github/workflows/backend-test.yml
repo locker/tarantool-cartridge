@@ -121,9 +121,9 @@ jobs:
           mkdir -p ${INSTALL_PREFIX}
           curl -L ${BASE_URL}/${ETCD_VER}/etcd-${ETCD_VER}-darwin-amd64.zip -o /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
           unzip /tmp/etcd-${ETCD_VER}-darwin-amd64.zip -d /tmp
-          mv /tmp/etcd-${ETCD_VER}-darwin-amd64/* ${INSTALL_PREFIX}
-          # etcd-${ETCD_VER}/etcdctl
-          # etcd-${ETCD_VER}/etcd
+          mv /tmp/etcd-${ETCD_VER}-darwin-amd64 ${INSTALL_PREFIX}
+          etcd-${ETCD_VER}/etcdctl
+          etcd-${ETCD_VER}/etcd
           echo "${INSTALL_PREFIX}" >> $GITHUB_PATH
 
       # Setup luatest
