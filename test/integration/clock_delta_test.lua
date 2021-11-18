@@ -5,7 +5,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.servers = {}
     local cluster_cookie = require('digest').urandom(6):hex()
     for i = 1, 3 do
@@ -38,14 +38,16 @@ g.before_all = function()
             end
         ]])
     end
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     for _, server in pairs(g.servers) do
         server:stop()
         fio.rmtree(server.workdir)
     end
-end
+    table.clear(g.servers)
+    g.servers = nil
+end)
 
 function g.test_clock_delta()
     g.servers[1]:eval([[

@@ -49,11 +49,15 @@ g.before_each(function()
     helpers.retrying({}, function()
         g.stateboard:connect_net_box()
     end)
+    notify_socket:close()
 end)
 
 g.after_each(function()
     g.stateboard:stop()
     fio.rmtree(g.datadir)
+end)
+
+g.after_all(function()
     g.stateboard = nil
 end)
 
@@ -347,6 +351,7 @@ function g.test_stateboard_console()
     local greeting = s:read('\n')
     t.assert(greeting)
     t.assert_str_matches(greeting:strip(), 'Tarantool.*%(Lua console%)')
+    s:close()
 end
 
 function g.test_box_options()

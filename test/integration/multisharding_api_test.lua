@@ -4,10 +4,8 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-local cluster
-
 g.before_all(function()
-    cluster = helpers.Cluster:new({
+    g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_multisharding'),
         cookie = require('digest').urandom(6):hex(),
@@ -26,18 +24,18 @@ g.before_all(function()
         },
     })
 
-    cluster:start()
+    g.cluster:start()
 end)
 
 g.after_all(function()
-    cluster:stop()
+    g.cluster:stop()
 
-    fio.rmtree(cluster.datadir)
-    cluster = nil
+    fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
 end)
 
 g.test_query = function()
-    local ret = cluster.main_server:graphql({
+    local ret = g.cluster.main_server:graphql({
         query = [[{
             replicasets(uuid: "aaaaaaaa-0000-0000-0000-000000000000") {
                 uuid
@@ -57,7 +55,7 @@ g.test_mutations = function()
         "replicasets[aaaaaaaa-0000-0000-0000-000000000000].vshard_group" ..
         " can't be modified",
         function()
-            return cluster.main_server:graphql({
+            return g.cluster.main_server:graphql({
                 query = [[mutation {
                     edit_replicaset(
                         uuid: "aaaaaaaa-0000-0000-0000-000000000000"
@@ -69,7 +67,7 @@ g.test_mutations = function()
     )
 
     -- Do nothing and check it doesn't raise an error
-    cluster.main_server:graphql({
+    g.cluster.main_server:graphql({
         query = [[mutation {
             edit_replicaset(
                 uuid: "aaaaaaaa-0000-0000-0000-000000000000"

@@ -7,7 +7,7 @@ local fio = require('fio')
 local yaml = require('yaml')
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = true,
@@ -33,13 +33,13 @@ g.before_all = function()
     })
 
     g.cluster:start()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
     g.cluster = nil
-end
+end)
 
 local function build_cluster(config)
     config.datadir = '/tmp'
@@ -76,6 +76,7 @@ function g.test_servers_access()
     t.assert_error_msg_contains('Server myrole-3 not found', function()
         g.cluster:server('myrole-3')
     end)
+    cluster:stop()
 end
 
 function g.test_replicaset_uuid_generation()
@@ -90,6 +91,7 @@ function g.test_replicaset_uuid_generation()
             t.assert_not(uuids[uuid], 'Generated uuid is not unique: ' .. uuid)
             uuids[uuid] = true
         end
+        cluster:stop()
     end
 end
 
@@ -147,6 +149,7 @@ function g.test_new_with_servers_count()
     t.assert_error_msg_contains('servers count must be positive', build_cluster, {replicasets = {
         {roles = {}, servers = -10, alias = 'router'},
     }})
+    cluster:stop()
 end
 
 function g.test_new_without_replicaset_and_server_alias()
@@ -180,6 +183,7 @@ function g.test_new_with_env()
     expected.SHARED_ENV_2 = 'override'
     t.assert_covers(cluster.servers[2].env, expected)
     t.assert_covers(cluster.servers[3].env, shared_env)
+    cluster:stop()
 end
 
 function g.test_errno()

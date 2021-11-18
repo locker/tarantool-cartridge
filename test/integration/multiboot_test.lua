@@ -49,6 +49,7 @@ g.after_each(function()
     end
 
     fio.rmtree(g.datadir)
+    table.clear(g.servers)
     g.servers = nil
 end)
 

@@ -15,7 +15,7 @@ local function bauth(username, password)
     return {authorization = 'Basic ' .. b64_data}
 end
 
-g.before_all = function()
+g.before_all(function()
     g.server = helpers.Server:new({
         alias = 'master',
         workdir = fio.tempdir(),
@@ -37,13 +37,13 @@ g.before_all = function()
             http = {headers = bauth(ADMIN_USERNAME, ADMIN_PASSWORD)}
         })
     end)
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.server:stop()
     fio.rmtree(g.server.workdir)
     g.server = nil
-end
+end)
 
 function g.test_api()
     local resp = g.server:graphql({

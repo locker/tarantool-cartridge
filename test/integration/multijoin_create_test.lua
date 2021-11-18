@@ -4,11 +4,8 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-local cluster
-local servers
-
 g.before_all(function()
-    cluster = helpers.Cluster:new({
+    g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = false,
         server_command = helpers.entrypoint('srv_basic'),
@@ -25,17 +22,17 @@ g.before_all(function()
         },
     })
 
-    servers = {}
+    g.servers = {}
     for i = 1, 2 do
         local http_port = 8090 + i
         local advertise_port = 13310 + i
         local alias = string.format('twin%d', i)
 
-        servers[i] = helpers.Server:new({
+        g.servers[i] = helpers.Server:new({
             alias = alias,
             command = helpers.entrypoint('srv_basic'),
-            workdir = fio.pathjoin(cluster.datadir, alias),
-            cluster_cookie = cluster.cookie,
+            workdir = fio.pathjoin(g.cluster.datadir, alias),
+            cluster_cookie = g.cluster.cookie,
             http_port = http_port,
             advertise_port = advertise_port,
             instance_uuid = helpers.uuid('b', 'b', i),
@@ -43,25 +40,25 @@ g.before_all(function()
         })
     end
 
-    for _, server in pairs(servers) do
+    for _, server in pairs(g.servers) do
         server:start()
     end
-    cluster:start()
+    g.cluster:start()
 end)
 
 g.after_all(function()
-    for _, server in pairs(servers or {}) do
+    for _, server in pairs(g.servers or {}) do
         server:stop()
     end
-    cluster:stop()
+    g.cluster:stop()
 
-    fio.rmtree(cluster.datadir)
-    cluster = nil
-    servers = nil
+    fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.servers = nil
 end)
 
 g.test_patch_topology = function()
-    cluster.main_server:eval([[
+    g.cluster.main_server:eval([[
         local args = ...
 
         local errors = require('errors')
@@ -91,18 +88,18 @@ g.test_patch_topology = function()
         assert(topology, tostring(err))
     ]], {{
         twin1 = {
-            advertise_uri = servers[1].advertise_uri,
-            instance_uuid = servers[1].instance_uuid,
-            replicaset_uuid = servers[1].replicaset_uuid,
+            advertise_uri = g.servers[1].advertise_uri,
+            instance_uuid = g.servers[1].instance_uuid,
+            replicaset_uuid = g.servers[1].replicaset_uuid,
         },
         twin2 = {
-            advertise_uri = servers[2].advertise_uri,
-            instance_uuid = servers[2].instance_uuid,
-            replicaset_uuid = servers[2].replicaset_uuid,
+            advertise_uri = g.servers[2].advertise_uri,
+            instance_uuid = g.servers[2].instance_uuid,
+            replicaset_uuid = g.servers[2].replicaset_uuid,
         }},
     })
 
-    cluster:retrying({}, function() servers[1]:connect_net_box() end)
-    cluster:retrying({}, function() servers[2]:connect_net_box() end)
-    cluster:wait_until_healthy()
+    g.cluster:retrying({}, function() g.servers[1]:connect_net_box() end)
+    g.cluster:retrying({}, function() g.servers[2]:connect_net_box() end)
+    g.cluster:wait_until_healthy()
 end

@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.server = helpers.Server:new({
         workdir = fio.tempdir(),
         alias = 'dummy',
@@ -23,13 +23,13 @@ g.before_all = function()
     t.helpers.retrying({timeout = 5}, function()
         g.server:graphql({query = '{ servers { uri } }'})
     end)
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.server:stop()
     fio.rmtree(g.server.workdir)
     g.server = nil
-end
+end)
 
 function g.test_uninitialized()
     local resp = g.server:graphql({

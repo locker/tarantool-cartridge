@@ -63,6 +63,9 @@ end)
 g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.sA1 = nil
+    g.sB1 = nil
 end)
 
 local function set_weight(srv, weight)

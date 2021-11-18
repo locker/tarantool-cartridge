@@ -410,4 +410,5 @@ function g.test_console()
     s:write('return "of reckoning"\n')
     local resp = s:read('...\n', 1)
     t.assert_equals(resp, yaml.encode({'of reckoning'}))
+    s:close()
 end

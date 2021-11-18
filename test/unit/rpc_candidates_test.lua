@@ -10,7 +10,7 @@ local helpers = require('test.helper')
 local t = require('luatest')
 local g = t.group()
 
-function g.setup()
+g.before_each(function()
     g.server = t.Server:new({
         command = helpers.entrypoint('srv_empty'),
         workdir = fio.tempdir(),
@@ -24,12 +24,12 @@ function g.setup()
     g.server:eval([[
         _G.test = require('test.unit.rpc_candidates_test')
     ]])
-end
+end)
 
-function g.teardown()
+g.after_all(function()
     g.server:stop()
     fio.rmtree(g.server.workdir)
-end
+end)
 
 local M = {}
 local function test_remotely(fn_name, fn)

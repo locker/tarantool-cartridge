@@ -25,6 +25,7 @@ end)
 g.after_each(function()
     g.server:stop()
     fio.rmtree(g.tempdir)
+    g.server = nil
 end)
 
 function g.test_cfg()

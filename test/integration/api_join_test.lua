@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_basic'),
@@ -45,16 +45,16 @@ g.before_all = function()
     t.helpers.retrying({timeout = 5}, function()
         g.server:graphql({query = '{ servers { uri } }'})
     end)
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     g.server:stop()
     fio.rmtree(g.cluster.datadir)
     fio.rmtree(g.server.workdir)
     g.cluster = nil
     g.server = nil
-end
+end)
 
 function g.test_join_server()
     local main = g.cluster:server('main')

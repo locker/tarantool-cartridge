@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.datadir = fio.tempdir()
     g.cluster = helpers.Cluster:new({
         datadir = g.datadir,
@@ -23,14 +23,14 @@ g.before_all = function()
         },
     })
     g.cluster:start()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.datadir)
     g.cluster = nil
     g.datadir = nil
-end
+end)
 
 function g.test_graphql_known_roles()
     local response = g.cluster.main_server:graphql({

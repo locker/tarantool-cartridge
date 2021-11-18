@@ -59,6 +59,7 @@ end)
 g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
 end)
 
 local function assert_err_equals(map, uri, expected1, expected2)

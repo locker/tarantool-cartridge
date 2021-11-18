@@ -5,7 +5,7 @@ local g = t.group()
 local helpers = require('test.helper')
 local log = require('log')
 
-g.before_all = function()
+g.before_all(function()
     g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         server_command = helpers.entrypoint('srv_basic'),
@@ -117,7 +117,7 @@ g.before_all = function()
             variables = {uri = g.server.advertise_uri},
         })
     end)
-end
+end)
 
 g.before_each(function()
     helpers.retrying({}, function()
@@ -125,14 +125,14 @@ g.before_each(function()
     end)
 end)
 
-g.after_all = function()
+g.after_all(function()
     g.cluster:stop()
     g.server:stop()
     fio.rmtree(g.cluster.datadir)
     fio.rmtree(g.server.workdir)
     g.cluster = nil
     g.server = nil
-end
+end)
 
 local function fields_from_map(map, field_key)
     local data_arr = {}

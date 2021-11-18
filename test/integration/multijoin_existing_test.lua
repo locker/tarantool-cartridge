@@ -4,11 +4,8 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-local cluster
-local servers
-
 g.before_all(function()
-    cluster = helpers.Cluster:new({
+    g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = false,
         server_command = helpers.entrypoint('srv_basic'),
@@ -27,17 +24,17 @@ g.before_all(function()
         },
     })
 
-    servers = {}
+    g.servers = {}
     for i = 2, 3 do
         local http_port = 8080 + i
         local advertise_port = 13300 + i
         local alias = string.format('twin%d', i)
 
-        servers[i] = helpers.Server:new({
+        g.servers[i] = helpers.Server:new({
             alias = alias,
             command = helpers.entrypoint('srv_basic'),
-            workdir = fio.pathjoin(cluster.datadir, alias),
-            cluster_cookie = cluster.cookie,
+            workdir = fio.pathjoin(g.cluster.datadir, alias),
+            cluster_cookie = g.cluster.cookie,
             http_port = http_port,
             advertise_port = advertise_port,
             replicaset_uuid = helpers.uuid('a'),
@@ -45,27 +42,27 @@ g.before_all(function()
         })
     end
 
-    for _, server in pairs(servers) do
+    for _, server in pairs(g.servers) do
         server:start()
     end
-    cluster:start()
+    g.cluster:start()
 end)
 
 g.after_all(function()
-    for _, server in pairs(servers or {}) do
+    for _, server in pairs(g.servers or {}) do
         server:stop()
     end
-    cluster:stop()
+    g.cluster:stop()
 
-    fio.rmtree(cluster.datadir)
-    cluster = nil
-    servers = nil
+    fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.servers = nil
 end)
 
 g.test_patch_topology = function()
     -- t.skip("Fails due to https://github.com/tarantool/tarantool/issues/4527")
 
-    cluster.main_server:graphql({
+    g.cluster.main_server:graphql({
         query = [[mutation(
             $replicasets: [EditReplicasetInput!]
         ){
@@ -75,19 +72,19 @@ g.test_patch_topology = function()
         }]],
         variables = {
             replicasets = {{
-                uuid = cluster.main_server.replicaset_uuid,
+                uuid = g.cluster.main_server.replicaset_uuid,
                 join_servers = {{
-                    uri = servers[2].advertise_uri,
-                    uuid = servers[2].instance_uuid,
+                    uri = g.servers[2].advertise_uri,
+                    uuid = g.servers[2].instance_uuid,
                 }, {
-                    uri = servers[3].advertise_uri,
-                    uuid = servers[3].instance_uuid,
+                    uri = g.servers[3].advertise_uri,
+                    uuid = g.servers[3].instance_uuid,
                 }}
             }}
         }
     })
 
-    cluster:retrying({}, function() servers[2]:connect_net_box() end)
-    cluster:retrying({}, function() servers[3]:connect_net_box() end)
-    cluster:wait_until_healthy()
+    g.cluster:retrying({}, function() g.servers[2]:connect_net_box() end)
+    g.cluster:retrying({}, function() g.servers[3]:connect_net_box() end)
+    g.cluster:wait_until_healthy()
 end

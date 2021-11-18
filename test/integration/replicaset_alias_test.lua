@@ -5,10 +5,8 @@ local fio = require('fio')
 
 local helpers = require('test.helper')
 
-local cluster
-
 g.before_all(function()
-    cluster = helpers.Cluster:new({
+    g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = false,
         server_command = helpers.entrypoint('srv_basic'),
@@ -24,16 +22,17 @@ g.before_all(function()
             },
         },
     })
-    cluster:start()
+    g.cluster:start()
 end)
 
 g.after_all(function()
-    cluster:stop()
-    fio.rmtree(cluster.datadir)
+    g.cluster:stop()
+    fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
 end)
 
 g.test_rename_replicaset = function()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
 
     local function query()
         return server:graphql({

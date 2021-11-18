@@ -21,6 +21,10 @@ g.after_each(function()
     fio.rmtree(g.server.workdir)
 end)
 
+g.after_all(function()
+    g.server = nil
+end)
+
 local function mock()
     local fiber = require('fiber')
     local fn_true = function() return true end

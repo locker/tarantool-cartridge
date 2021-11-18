@@ -4,10 +4,8 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-local cluster
-
-g.before_all = function()
-    cluster = helpers.Cluster:new({
+g.before_all(function()
+    g.cluster = helpers.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = true,
         server_command = helpers.entrypoint('srv_basic'),
@@ -23,16 +21,17 @@ g.before_all = function()
             },
         },
     })
-    cluster:start()
-end
+    g.cluster:start()
+end)
 
-g.after_all = function()
-    cluster:stop()
-    fio.rmtree(cluster.datadir)
-end
+g.after_all(function()
+    g.cluster:stop()
+    fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+end)
 
 g.test_simple = function()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
 
     server:eval([[
         package.loaded['test'] = package.loaded['test'] or {}
@@ -73,7 +72,7 @@ g.test_simple = function()
 end
 
 g.test_errors_in_handlers = function()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
 
     server:eval([[
         package.loaded['test']['test'] = function(root, args)
@@ -138,7 +137,7 @@ g.test_errors_in_handlers = function()
     -- Fields sub-selections
     t.assert_error_msg_equals(
         'Scalar field "uri" cannot have subselections',
-        function() return cluster.main_server:graphql({
+        function() return g.cluster.main_server:graphql({
             query = [[
                 { cluster { self { uuid uri { x } state } } }
             ]]
@@ -147,7 +146,7 @@ g.test_errors_in_handlers = function()
 
     t.assert_error_msg_equals(
         'Composite field "replicaset" must have subselections',
-        function() return cluster.main_server:graphql({
+        function() return g.cluster.main_server:graphql({
             query = [[
                 { servers { alias replicaset storage { uri } uuid } }
             ]]
@@ -156,7 +155,7 @@ g.test_errors_in_handlers = function()
 
     t.assert_error_msg_equals(
         'Field "unknown" is not defined on type "Server"',
-        function() return cluster.main_server:graphql({
+        function() return g.cluster.main_server:graphql({
             query = [[
                 { servers { unknown } }
             ]]
@@ -165,7 +164,7 @@ g.test_errors_in_handlers = function()
 end
 
 g.test_reread_request = function()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
 
     server:eval([[
         local httpd = require('cartridge').service_get('httpd')
@@ -178,7 +177,7 @@ g.test_reread_request = function()
 end
 
 g.test_unknown_query_mutation = function()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
     t.assert_error_msg_equals(
         'Field "UNKNOWN_TYPE" is not defined on type "Query"',
         function() return server:graphql({
@@ -205,17 +204,17 @@ function g.test_error_extensions()
                 disable_servers(uuids: $uuids) { uuid }
             }
         }]],
-        variables = {uuids = {cluster.main_server.instance_uuid}},
+        variables = {uuids = {g.cluster.main_server.instance_uuid}},
         raise = box.NULL,
     }
 
     t.assert_error_msg_equals(
         'Current instance "localhost:13301" can not be disabled',
-        helpers.Server.graphql, cluster.main_server, request
+        helpers.Server.graphql, g.cluster.main_server, request
     )
 
     request.raise = false
-    local response = cluster.main_server:graphql(request)
+    local response = g.cluster.main_server:graphql(request)
     local extensions = response.errors[1].extensions
     t.assert_str_matches(
         extensions['io.tarantool.errors.stack'],
@@ -228,7 +227,7 @@ function g.test_error_extensions()
 end
 
 function g.test_middleware()
-    local server = cluster.main_server
+    local server = g.cluster.main_server
 
     -- GraphQL execution can be interrupted by raising error in trigger
     server:eval([[

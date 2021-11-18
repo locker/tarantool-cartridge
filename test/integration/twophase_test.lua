@@ -63,7 +63,9 @@ end)
 g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
-    -- g.cluster = nil
+    g.cluster = nil
+    g.s1 = nil
+    g.s2 = nil
 end)
 
 g.before_each(function()

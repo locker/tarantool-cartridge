@@ -40,6 +40,8 @@ end)
 g.after_each(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.victim = nil
 end)
 
 function g.test_api_disable()

@@ -7,13 +7,13 @@ local g = t.group()
 
 local cluster_cookie = require('cartridge.cluster-cookie')
 
-function g.before_all()
+g.before_all(function()
     g.tempdir = fio.tempdir()
-end
+end)
 
-function g.after_all()
+g.after_all(function()
     fio.rmtree(g.tempdir)
-end
+end)
 
 function g.test_set_cookie()
     cluster_cookie.init(g.tempdir)

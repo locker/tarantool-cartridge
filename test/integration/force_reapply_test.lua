@@ -28,6 +28,10 @@ end)
 g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.A1 = nil
+    g.A2 = nil
+    g.A3 = nil
 end)
 
 

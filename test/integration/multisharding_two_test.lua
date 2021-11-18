@@ -70,6 +70,8 @@ g.after_all(function()
     g.cluster:stop()
     g.server:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.server = nil
 end)
 
 

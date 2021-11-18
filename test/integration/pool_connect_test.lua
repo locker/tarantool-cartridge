@@ -24,6 +24,7 @@ g.after_all(function()
     fio.rmtree(g.datadir)
     remote_control.drop_connections()
     remote_control.stop()
+    remote_control = nil
 end)
 
 function g.test_identity()

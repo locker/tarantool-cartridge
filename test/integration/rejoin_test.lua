@@ -32,6 +32,10 @@ g.after_each(function()
     fio.rmtree(g.cluster.datadir)
 end)
 
+g.after_all(function()
+    g.cluster = nil
+end)
+
 g.before_test('test_rebootstrap', function()
     g.server = helpers.Server:new({
         workdir = g.cluster.datadir .. '/13303',

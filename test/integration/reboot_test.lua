@@ -31,6 +31,7 @@ end)
 g.after_each(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
 end)
 
 function g.test_oldstyle_config()

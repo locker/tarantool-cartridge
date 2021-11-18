@@ -13,7 +13,7 @@ local function handle_feedback(req)
     ch:put(req:json(), 0)
 end
 
-g.before_all = function()
+g.before_all(function()
     g.tempdir = fio.tempdir()
 
     g.httpd = http.new('127.0.0.1', nil, {log_requests = false})
@@ -54,13 +54,15 @@ g.before_all = function()
     g.msg = ch:get(2)
     t.assert_type(g.msg, 'table', 'No feedback received')
     log.info('Feedback: %s', json.encode(g.msg))
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     g.httpd:stop()
     g.cluster:stop()
     fio.rmtree(g.tempdir)
-end
+    g.httpd = nil
+    g.cluster = nil
+end)
 
 function g.test_feedback()
     t.assert_equals(g.msg.server_id, helpers.uuid('a', 'a', 1))

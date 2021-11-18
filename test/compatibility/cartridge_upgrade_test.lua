@@ -7,11 +7,11 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all = function()
+g.before_all(function()
     g.tempdir = fio.tempdir()
-end
+end)
 
-g.after_all = function()
+g.after_all(function()
     if g.cluster ~= nil then
         g.cluster:stop()
         g.cluster = nil
@@ -20,7 +20,7 @@ g.after_all = function()
         fio.rmtree(g.tempdir)
         g.tempdir = nil
     end
-end
+end)
 
 local function version(srv)
     local version = srv.net_box:call('require', {'cartridge.VERSION'})
