@@ -38,6 +38,7 @@ end
 g.after_all = function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
 end
 
 local function build_cluster(config)
