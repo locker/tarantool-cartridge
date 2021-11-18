@@ -21,6 +21,7 @@ end)
 g.after_each(function()
     g.server:stop()
     fio.rmtree(g.tempdir)
+    g.server = nil
 end)
 
 function g.test_failover_2_0_1_78()

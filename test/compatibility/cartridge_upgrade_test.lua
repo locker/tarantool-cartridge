@@ -14,6 +14,7 @@ end
 g.after_all = function()
     if g.cluster ~= nil then
         g.cluster:stop()
+        g.cluster = nil
     end
     if g.tempdir ~= nil then
         fio.rmtree(g.tempdir)

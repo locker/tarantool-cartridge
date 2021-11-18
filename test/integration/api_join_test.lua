@@ -52,6 +52,8 @@ g.after_all = function()
     g.server:stop()
     fio.rmtree(g.cluster.datadir)
     fio.rmtree(g.server.workdir)
+    g.cluster = nil
+    g.server = nil
 end
 
 function g.test_join_server()

@@ -153,6 +153,12 @@ local function after_all(g)
     g.state_provider:stop()
     fio.rmtree(g.state_provider.workdir)
     fio.rmtree(g.datadir)
+    -- g.cluster = nil
+    -- g.state_provider = nil
+    -- R1 = nil
+    -- S1 = nil
+    -- S2 = nil
+    -- S3 = nil
 end
 g_stateboard.after_all(function() after_all(g_stateboard) end)
 g_etcd2.after_all(function() after_all(g_etcd2) end)

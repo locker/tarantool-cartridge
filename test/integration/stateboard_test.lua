@@ -54,6 +54,7 @@ end)
 g.after_each(function()
     g.stateboard:stop()
     fio.rmtree(g.datadir)
+    g.stateboard = nil
 end)
 
 local function create_client(srv)

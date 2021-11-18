@@ -84,6 +84,8 @@ g.after_each(function()
     g.etcd_a:stop()
     g.etcd_b:stop()
     fio.rmtree(g.datadir)
+    g.etcd_a = nil
+    g.etcd_b = nil
 end)
 
 function g.test_locks()

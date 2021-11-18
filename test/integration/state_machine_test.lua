@@ -46,6 +46,8 @@ g.after_each(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
     g.cluster = nil
+    g.master = nil
+    g.slave = nil
 end)
 
 local function is_master(srv)

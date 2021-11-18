@@ -130,6 +130,8 @@ g.after_all = function()
     g.server:stop()
     fio.rmtree(g.cluster.datadir)
     fio.rmtree(g.server.workdir)
+    g.cluster = nil
+    g.server = nil
 end
 
 local function fields_from_map(map, field_key)

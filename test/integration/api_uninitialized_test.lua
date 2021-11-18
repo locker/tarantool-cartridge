@@ -28,6 +28,7 @@ end
 g.after_all = function()
     g.server:stop()
     fio.rmtree(g.server.workdir)
+    g.server = nil
 end
 
 function g.test_uninitialized()

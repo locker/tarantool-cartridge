@@ -67,6 +67,10 @@ end)
 g.after_all(function()
     g.cluster:stop()
     fio.rmtree(g.cluster.datadir)
+    g.cluster = nil
+    g.A1 = nil
+    g.B1 = nil
+    g.B2 = nil
 end)
 
 function g.test_issues()

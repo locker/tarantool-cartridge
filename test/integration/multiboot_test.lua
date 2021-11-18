@@ -4,7 +4,7 @@ local g = t.group()
 
 local helpers = require('test.helper')
 
-g.before_all(function()
+g.before_each(function()
     g.datadir = fio.tempdir()
 
     g.servers = {}
@@ -43,7 +43,7 @@ g.before_all(function()
     end
 end)
 
-g.after_all(function()
+g.after_each(function()
     for _, server in pairs(g.servers or {}) do
         server:stop()
     end
