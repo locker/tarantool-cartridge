@@ -160,7 +160,14 @@ jobs:
           ulimit -n 12288 || true
           ulimit -n
 
-      - run: .rocks/bin/luatest -p 'integration.*'
+      - run: |
+          .rocks/bin/luatest -v \
+          -x 'integration.zones.*' \
+          -x 'integration.upload.*' \
+          -x 'integration.workdir.*' \
+          -x 'unit.helpers.*' \
+          -x 'integration.failover_stateful.etcd2.test_force_promote_timeout' \
+          -x 'integration.failover_stateful.stateboard.test_force_promote_timeout'
 
       - name: Run pytest -v
         run: |
