@@ -165,9 +165,8 @@ jobs:
           -x 'integration.zones.*' \
           -x 'integration.upload.*' \
           -x 'integration.workdir.*' \
-          -x 'unit.helpers.*' \
-          -x 'integration.failover_stateful.etcd2.test_force_promote_timeout' \
-          -x 'integration.failover_stateful.stateboard.test_force_promote_timeout'
+          -x 'integration.twophase.*' \
+          -x 'unit.helpers.*'
 
       - name: Run pytest -v
         run: |
