@@ -345,7 +345,8 @@ local function validate_failover_schema(field, topology)
             topology.failover.mode == nil or
             topology.failover.mode == 'disabled' or
             topology.failover.mode == 'eventual' or
-            topology.failover.mode == 'stateful',
+            topology.failover.mode == 'stateful' or
+            topology.failover.mode == 'raft',
             '%s.failover unknown mode %q',
             field, topology.failover.mode
         )

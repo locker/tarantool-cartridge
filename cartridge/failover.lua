@@ -76,6 +76,10 @@ vars:new('options', {
     NETBOX_CALL_TIMEOUT = 1,
 })
 
+vars:new('raft_term')
+vars:new('leader_uuid')
+vars:new('raft_trigger')
+
 function _G.__cartridge_failover_get_lsn(timeout)
     box.ctl.wait_ro(timeout)
     return {
@@ -197,6 +201,65 @@ local function describe(uuid)
     else
         return uuid
     end
+end
+
+--- Generate appointments according to raft status.
+-- Used in 'raft' failover mode.
+-- @function _get_appointments_raft_mode
+-- @local
+local function _get_appointments_raft_mode(topology_cfg)
+    checks('table')
+    local replicasets = assert(topology_cfg.replicasets)
+
+    local appointments = {}
+
+    for replicaset_uuid, _ in pairs(replicasets) do
+        local leaders = topology.get_leaders_order(
+            topology_cfg, replicaset_uuid
+        )
+        if replicaset_uuid == vars.replicaset_uuid then
+            local my_leader_id = box.info.election.leader
+            local my_leader = box.info.replication[my_leader_id]
+            if my_leader ~= nil then
+                appointments[replicaset_uuid] = my_leader.uuid
+                goto next_rs
+            end
+        end
+
+        local last_leader
+        local last_term = 0
+        for _, instance_uuid in ipairs(leaders) do
+            local server = topology_cfg.servers[instance_uuid]
+            local member = membership.get_member(server.uri)
+
+            if member ~= nil
+            and member.payload.raft_leader ~= nil
+            and member.payload.raft_term >= last_term
+            then
+                last_leader = member.payload.raft_leader
+                last_term = member.payload.raft_term
+            end
+        end
+        appointments[replicaset_uuid] = last_leader
+        ::next_rs::
+    end
+
+    appointments[vars.replicaset_uuid] = vars.leader_uuid
+    return appointments
+end
+
+local function on_election_trigger()
+    local election = box.info.election
+    vars.raft_term = election.term
+
+    local leader = box.info.replication[election.leader] or {}
+
+    if vars.leader_uuid ~= leader.uuid then
+        vars.cache.is_leader = vars.leader_uuid == vars.instance_uuid
+        vars.leader_uuid = leader.uuid
+        membership.set_payload('raft_leader', vars.leader_uuid)
+    end
+    membership.set_payload('raft_term', vars.raft_term)
 end
 
 --- Accept new appointments.
@@ -638,6 +701,17 @@ local function cfg(clusterwide_config)
     local failover_cfg = topology.get_failover_params(topology_cfg)
     local first_appointments
 
+    -- disable raft if it was enabled
+    do
+        if vars.raft_trigger then
+            box.ctl.on_election(nil, vars.raft_trigger)
+            vars.raft_trigger = nil
+        end
+        box.cfg{ election_mode = 'off' }
+        vars.raft_term = nil
+        vars.leader_uuid = nil
+    end
+
     if failover_cfg.mode == 'disabled' then
         log.info('Failover disabled')
         vars.fencing_enabled = false
@@ -730,6 +804,57 @@ local function cfg(clusterwide_config)
             end,
         })
         vars.failover_fiber:name('cartridge.stateful-failover')
+
+    elseif failover_cfg.mode == 'raft' then
+        box.cfg{
+            replication_connect_quorum = 0,
+            -- The instance is set to candidate, so it may become leader itself
+            -- as well as vote for other instances.
+            --
+            -- Alternative: set one of the three instances to `voter`, so that it
+            -- never becomes a leader but still votes for one of its peers and helps
+            -- it reach election quorum (2 in our case).
+            election_mode = os.getenv('TARANTOOL_ELECTION_MODE') or 'candidate',
+            -- Quorum for both synchronous transactions and
+            -- leader election votes.
+            replication_synchro_quorum = failover_cfg.replication_synchro_quorum or 2,
+            -- Synchronous replication timeout. The transaction will be
+            -- rolled back if no quorum is achieved during 1 second.
+            replication_synchro_timeout = 1,
+            -- Heartbeat timeout. A leader is considered dead if it doesn't
+            -- send heartbeats for 4 * replication_timeout (1 second in our case).
+            -- Once the leader is dead, remaining instances start a new election round.
+            replication_timeout = 0.25,
+            -- Timeout between elections. Needed to restart elections when no leader
+            -- emerges soon enough.
+            election_timeout = 0.25, -- = 4 * repl_timeout
+        }
+
+        local election = box.info.election
+
+        vars.raft_term = election.term
+
+        local leader = box.info.replication[election.leader] or {}
+        vars.leader_uuid = leader.uuid
+
+        membership.set_payload('raft_term', vars.raft_term)
+        membership.set_payload('raft_leader', vars.leader_uuid)
+
+        vars.raft_trigger = box.ctl.on_election(on_election_trigger)
+
+        vars.fencing_enabled = false
+        vars.consistency_needed = false
+        first_appointments = _get_appointments_raft_mode(topology_cfg)
+
+        vars.failover_fiber = fiber.new(failover_loop, {
+            get_appointments = function()
+                vars.membership_notification:wait()
+                return _get_appointments_raft_mode(topology_cfg)
+            end,
+        })
+        vars.failover_fiber:name('cartridge.raft-failover')
+
+        log.info('Raft failover enabled')
     else
         return nil, ApplyConfigError:new(
             'Unknown failover mode %q',
