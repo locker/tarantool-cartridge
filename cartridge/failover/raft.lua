@@ -101,12 +101,14 @@ local function cfg(failover_cfg)
     membership.set_payload('raft_term', vars.raft_term)
     membership.set_payload('raft_leader', vars.leader_uuid)
 
-    vars.raft_trigger = box.ctl.on_election(on_election_trigger)
+    if vars.raft_trigger == nil then
+        vars.raft_trigger = box.ctl.on_election(on_election_trigger)
+    end
 end
 
 -- disable raft if it was enabled
 local function disable()
-    if vars.raft_trigger then
+    if vars.raft_trigger ~= nil then
         box.ctl.on_election(nil, vars.raft_trigger)
         vars.raft_trigger = nil
     end
