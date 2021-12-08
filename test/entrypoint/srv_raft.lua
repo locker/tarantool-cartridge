@@ -18,7 +18,6 @@ local ok, err = errors.pcall('CartridgeCfgError', cartridge.cfg, {
     roles = {
         'cartridge.roles.vshard-storage',
         'cartridge.roles.vshard-router',
-        -- 'mymodule-dependency',
         'test.roles.api',
         'test.roles.storage',
     },

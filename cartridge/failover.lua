@@ -734,7 +734,6 @@ local function cfg(clusterwide_config)
             end,
         })
         vars.failover_fiber:name('cartridge.stateful-failover')
-
     elseif failover_cfg.mode == 'raft' then
         raft_failover.cfg(failover_cfg)
 

@@ -47,7 +47,7 @@ local function set_failover_params(vars)
 end
 
 g.before_all = function()
-    t.skip_if(box.ctl.on_election == nil)
+    -- t.skip_if(box.ctl.on_election == nil)
     g.cluster = h.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = true,
@@ -111,15 +111,15 @@ g.after_all = function()
 end
 
 local function set_master(instance_name)
-    g.cluster:server(instance_name).net_box:eval[[
+    g.cluster:server(instance_name):exec(function()
         box.ctl.promote()
-    ]]
+    end)
 end
 
 local function get_raft_info(alias)
-    return g.cluster:server(alias).net_box:eval([[
+    return g.cluster:server(alias):exec(function()
         return box.info.election
-    ]])
+    end)
 end
 
 local function kill_server(alias)
@@ -153,18 +153,18 @@ end
 local function get_2pc_count()
     local counts = {}
     for _, server in ipairs(g.cluster.servers) do
-        table.insert(counts, server.net_box:eval([[
+        table.insert(counts, server:exec(function()
             return _G['2pc_count']
-        ]]))
+        end))
     end
     return counts
 end
 
 local function get_sharding_config()
-    local sharding = g.cluster:server('router-1'):eval[[
-        vars = require('cartridge.vars').new('cartridge.roles.vshard-router')
+    local sharding = g.cluster:server('router-1'):exec(function()
+        local vars = require('cartridge.vars').new('cartridge.roles.vshard-router')
         return vars.vshard_cfg['vshard-router/default'].sharding
-    ]]
+    end)
     return fun.iter(sharding):map(function(x, y)
         return x, fun.iter(y.replicas):map(function(k, v)
             return k, {master = v.master}
@@ -193,6 +193,13 @@ g.before_each(function()
             }
         })
         t.assert_equals(get_master(replicaset_uuid), {storage_1_uuid, storage_1_uuid})
+    end)
+end)
+
+
+g.before_test('test_kill_master', function()
+    g.cluster:server('storage-1'):exec(function ()
+        box.space.test:alter{is_sync = true}
     end)
 end)
 
@@ -314,13 +321,13 @@ g.test_kill_master = function()
 end
 
 g.test_disable_raft_failover = function()
-    local assertions = g.cluster:server('storage-1'):eval([[
+    local assertions = g.cluster:server('storage-1'):exec(function()
         return {
             #box.ctl.on_election(),
             box.cfg.election_mode,
             box.info.election.state,
         }
-    ]])
+    end)
     t.assert_equals(assertions, {
         1,
         'candidate',
@@ -331,16 +338,47 @@ g.test_disable_raft_failover = function()
         set_failover_params{mode = 'disabled'}
     end)
 
-    local assertions = g.cluster:server('router-1').net_box:eval([[
+    local assertions = g.cluster:server('router-1'):exec(function()
         return {
             #box.ctl.on_election(),
             box.cfg.election_mode,
             box.info.election.state,
         }
-    ]])
+    end)
     t.assert_equals(assertions, {
         0,
         'off',
         'follower',
     })
+end
+
+g.after_test('test_disable_raft_failover', function()
+    h.retrying({}, function ()
+        set_failover_params{mode = 'raft'}
+    end)
+end)
+
+
+g.test_graphql_errors = function()
+    t.assert_error_msg_contains(
+        'failover.election_timeout must be non-negative',
+        set_failover_params,
+        {
+            election_timeout = -1,
+        }
+    )
+    t.assert_error_msg_contains(
+        'failover.synchro_timeout must be non-negative',
+        set_failover_params,
+        {
+            synchro_timeout = -1,
+        }
+    )
+    t.assert_error_msg_contains(
+        'failover.replication_timeout must be non-negative',
+        set_failover_params,
+        {
+            replication_timeout = -1,
+        }
+    )
 end

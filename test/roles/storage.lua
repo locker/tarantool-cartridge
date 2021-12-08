@@ -2,7 +2,7 @@ return {
     init = function(opts)
         if opts.is_master then
             assert(box.info.ro == false)
-            box.schema.space.create('test', { if_not_exists = true, is_sync = true})
+            box.schema.space.create('test', { if_not_exists = true })
             box.space.test:format{
                 {'bucket_id', 'unsigned'},
                 {'key', 'string'},
