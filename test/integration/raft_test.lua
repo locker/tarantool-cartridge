@@ -15,13 +15,24 @@ local function set_failover_params(vars)
         query = [[
             mutation(
                 $mode: String
+                $raft_quorum: String
+                $election_timeout: Float
+                $replication_timeout: Float
+                $synchro_timeout: Float
             ) {
                 cluster {
                     failover_params(
                         mode: $mode
-
+                        raft_quorum: $raft_quorum
+                        election_timeout: $election_timeout
+                        replication_timeout: $replication_timeout
+                        synchro_timeout: $synchro_timeout
                     ) {
                         mode
+                        raft_quorum
+                        election_timeout
+                        replication_timeout
+                        synchro_timeout
                     }
                 }
             }
@@ -79,7 +90,19 @@ g.before_all = function()
         },
     })
     g.cluster:start()
-    set_failover_params{mode = 'raft'}
+    t.assert_equals(set_failover_params({
+        mode = 'raft',
+        election_timeout = 1,
+        replication_timeout = 0.25,
+        synchro_timeout = 1,
+        raft_quorum = 'N/2 + 1',
+    }), {
+        mode = 'raft',
+        election_timeout = 1,
+        replication_timeout = 0.25,
+        synchro_timeout = 1,
+        raft_quorum = 'N/2 + 1',
+    })
 end
 
 g.after_all = function()

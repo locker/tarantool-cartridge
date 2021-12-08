@@ -25,7 +25,7 @@ local function get_params()
     -- (**Added** in v2.0.2-2)
     -- @table FailoverParams
     -- @tfield string mode
-    --   Supported modes are "disabled", "eventual" and "stateful"
+    --   Supported modes are "disabled", "eventual", "stateful" or "raft"
     -- @tfield ?string state_provider
     --   Supported state providers are "tarantool" and "etcd2".
     -- @tfield number failover_timeout
@@ -97,6 +97,10 @@ local function set_params(opts)
         fencing_enabled = '?boolean',
         fencing_timeout = '?number',
         fencing_pause = '?number',
+        election_timeout = '?number',
+        replication_timeout = '?number',
+        synchro_timeout = '?number',
+        raft_quorum = '?string',
     })
 
     local topology_cfg = confapplier.get_deepcopy('topology')
@@ -144,6 +148,19 @@ local function set_params(opts)
     end
     if opts.fencing_pause ~= nil then
         topology_cfg.failover.fencing_pause = opts.fencing_pause
+    end
+
+    if opts.election_timeout ~= nil then
+        topology_cfg.failover.election_timeout = opts.election_timeout
+    end
+    if opts.replication_timeout ~= nil then
+        topology_cfg.failover.replication_timeout = opts.replication_timeout
+    end
+    if opts.synchro_timeout ~= nil then
+        topology_cfg.failover.synchro_timeout = opts.synchro_timeout
+    end
+    if opts.raft_quorum ~= nil then
+        topology_cfg.failover.raft_quorum = opts.raft_quorum
     end
 
     local ok, err = twophase.patch_clusterwide({topology = topology_cfg})
