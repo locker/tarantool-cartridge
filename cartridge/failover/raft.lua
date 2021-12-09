@@ -68,6 +68,8 @@ end
 
 local function cfg(failover_cfg)
     checks('table')
+    assert(box.ctl.on_election, "Raft failover is available only in Tarantool >= 2.10.0")
+
     box.cfg{
         -- The instance is set to candidate, so it may become leader itself
         -- as well as vote for other instances.
@@ -91,19 +93,11 @@ local function cfg(failover_cfg)
         election_timeout = failover_cfg.election_timeout,
     }
 
-    local election = box.info.election
-
-    vars.raft_term = election.term
-
-    local leader = box.info.replication[election.leader] or {}
-    vars.leader_uuid = leader.uuid
-
-    membership.set_payload('raft_term', vars.raft_term)
-    membership.set_payload('raft_leader', vars.leader_uuid)
-
     if vars.raft_trigger == nil then
         vars.raft_trigger = box.ctl.on_election(on_election_trigger)
     end
+
+    return true
 end
 
 -- disable raft if it was enabled

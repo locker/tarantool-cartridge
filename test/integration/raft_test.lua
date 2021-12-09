@@ -49,7 +49,7 @@ local function set_failover_params(vars)
 end
 
 g.before_all = function()
-    -- t.skip_if(box.ctl.on_election == nil)
+    t.skip_if(box.ctl.on_election == nil)
     g.cluster = h.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = true,
@@ -105,19 +105,16 @@ g.before_all = function()
         },
     })
     g.cluster:start()
-    t.assert_equals(set_failover_params({
-        mode = 'raft',
-        election_timeout = 1,
-        replication_timeout = 0.25,
-        synchro_timeout = 1,
-        raft_quorum = 'N/2 + 1',
-    }), {
-        mode = 'raft',
-        election_timeout = 1,
-        replication_timeout = 0.25,
-        synchro_timeout = 1,
-        raft_quorum = 'N/2 + 1',
+
+    g.cluster.main_server:setup_replicaset({
+        roles = {'vshard-storage', 'test.roles.storage'},
+        weight = 0,
+        uuid = single_replicaset_uuid,
     })
+    -- make single vshard-storage writable
+    g.cluster:server('single-storage-1'):exec(function()
+        box.cfg{replication_synchro_quorum = 1}
+    end)
 end
 
 g.after_all = function()
@@ -189,6 +186,21 @@ end
 
 g.before_each(function()
     h.retrying({}, function()
+        t.assert_equals(set_failover_params({
+            mode = 'raft',
+            election_timeout = 1,
+            replication_timeout = 0.25,
+            synchro_timeout = 1,
+            raft_quorum = 'N/2 + 1',
+        }), {
+            mode = 'raft',
+            election_timeout = 1,
+            replication_timeout = 0.25,
+            synchro_timeout = 1,
+            raft_quorum = 'N/2 + 1',
+        })
+    end)
+    h.retrying({}, function()
         t.assert_equals(h.list_cluster_issues(g.cluster.main_server), {})
     end)
     h.retrying({}, function()
@@ -208,6 +220,9 @@ g.before_each(function()
             },
         })
         t.assert_equals(get_master(replicaset_uuid), {storage_1_uuid, storage_1_uuid})
+    end)
+    g.cluster:server('storage-1'):exec(function()
+        box.space.test:truncate()
     end)
 end)
 
@@ -398,15 +413,20 @@ g.test_graphql_errors = function()
     )
 end
 
+g.before_test('test_bucket_ref_on_replica_prevent_bucket_move', function()
+    g.cluster.main_server:exec(function()
+        local vshard_router = require('vshard.router')
+        local key = 'key'
+        local bucket_id = vshard_router:bucket_id_strcrc32(key)
+        vshard_router.callrw(bucket_id, 'box.space.test:insert',
+                {{bucket_id, key, {}}})
+    end)
+end)
+
 -- see https://github.com/tarantool/vshard/issues/173 for details
 g.test_bucket_ref_on_replica_prevent_bucket_move = function()
     t.xfail('Test fails until tarantool/vshard#173 will be fixed')
-
-    -- make single vshard-storage writable
-    g.cluster:server('single-storage-1'):exec(function()
-        box.cfg{replication_synchro_quorum = 1}
-    end)
-
+    -- ref bucket on replica
     local some_bucket_id = g.cluster:server('storage-2'):exec(function()
         assert(box.info.ro)
         local some_bucket_id = box.space.test:pairs():nth(1).bucket_id
@@ -416,7 +436,6 @@ g.test_bucket_ref_on_replica_prevent_bucket_move = function()
     end)
 
     g.cluster.main_server:setup_replicaset({
-        roles = {'vshard-storage', 'test.roles.storage'},
         weight = 1,
         uuid = single_replicaset_uuid,
     })
@@ -426,17 +445,29 @@ g.test_bucket_ref_on_replica_prevent_bucket_move = function()
         assert(box.info.ro ~= true)
         local vshard_storage = require('vshard.storage')
         vshard_storage.bucket_send(bucket_id, replicaset_uuid)
+        -- wait until sending
+        require('fiber').sleep(0.5)
         return box.space.test:pairs():filter(function(x)
             return x.bucket_id == bucket_id
         end):length()
     end, {some_bucket_id, single_replicaset_uuid})
 
+    -- t.assert_not(bucket_counts)
     t.assert_not_equals(bucket_counts, 0)
+
+    -- unref bucket on replica
+    g.cluster:server('storage-2'):exec(function(some_bucket_id)
+        assert(box.info.ro)
+        local vshard_storage = require('vshard.storage')
+        vshard_storage.bucket_unref(some_bucket_id, 'read')
+    end, {some_bucket_id})
 end
 
 g.after_test('test_bucket_ref_on_replica_prevent_bucket_move', function()
+    g.cluster:server('single-storage-1'):exec(function()
+        box.space.test:truncate()
+    end)
     g.cluster.main_server:setup_replicaset({
-        roles = {},
         weight = 0,
         uuid = single_replicaset_uuid,
     })
