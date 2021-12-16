@@ -81,18 +81,22 @@ function g.test_edit_zone()
                 {alias = 'r1', join_servers = { {uri = 'localhost:13301'},  {uri = 'localhost:13302'} }},
                 {alias = 'r2', join_servers = { {uri = 'localhost:13303'},  {uri = 'localhost:13304'} }},
             }})
+            return true
         end
     )
-    t.assert_equals(rc, false, err)
+    
+    t.assert_equals(rc, true, err)
 
     local rc, err = pcall(g.server.exec, g.server, 
-        function (uuid1, uuid2) 
+        function (uuid1, uuid2)
+            local cartridge = require('cartridge')
             cartridge.admin_edit_topology({
                 servers = {
                     {uuid = uuid1, zone = 'zone-1'},
                     {uuid = uuid2, zone = 'zone-3'},
                },
             })
+            return true
         end,
         {g.server.instance_uuid,
         g.server3.instance_uuid}
