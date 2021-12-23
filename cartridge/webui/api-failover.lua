@@ -67,10 +67,6 @@ local gql_type_userapi = gql_types.object({
         fencing_enabled = gql_types.boolean.nonNull,
         fencing_timeout = gql_types.float.nonNull,
         fencing_pause = gql_types.float.nonNull,
-        replication_timeout = gql_types.float.nonNull,
-        election_timeout = gql_types.float.nonNull,
-        synchro_timeout = gql_types.float.nonNull,
-        raft_quorum = gql_types.string.nonNull,
     }
 })
 
@@ -152,10 +148,6 @@ local function init(graphql)
             fencing_enabled = gql_types.boolean,
             fencing_timeout = gql_types.float,
             fencing_pause = gql_types.float,
-            election_timeout = gql_types.float,
-            replication_timeout = gql_types.float,
-            synchro_timeout = gql_types.float,
-            raft_quorum = gql_types.string,
         },
         kind = gql_type_userapi.nonNull,
         callback = module_name .. '.set_failover_params',

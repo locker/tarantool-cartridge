@@ -17,24 +17,12 @@ local function set_failover_params(vars)
         query = [[
             mutation(
                 $mode: String
-                $raft_quorum: String
-                $election_timeout: Float
-                $replication_timeout: Float
-                $synchro_timeout: Float
             ) {
                 cluster {
                     failover_params(
                         mode: $mode
-                        raft_quorum: $raft_quorum
-                        election_timeout: $election_timeout
-                        replication_timeout: $replication_timeout
-                        synchro_timeout: $synchro_timeout
                     ) {
                         mode
-                        raft_quorum
-                        election_timeout
-                        replication_timeout
-                        synchro_timeout
                     }
                 }
             }
@@ -49,7 +37,7 @@ local function set_failover_params(vars)
 end
 
 g.before_all = function()
-    t.skip_if(box.ctl.on_election == nil)
+    -- t.skip_if(box.ctl.on_election == nil)
     g.cluster = h.Cluster:new({
         datadir = fio.tempdir(),
         use_vshard = true,
@@ -103,6 +91,12 @@ g.before_all = function()
                 },
             },
         },
+        env = {
+            TARANTOOL_ELECTION_TIMEOUT = 1,
+            TARANTOOL_REPLICATION_TIMEOUT = 0.25,
+            TARANTOOL_SYNCHRO_TIMEOUT = 1,
+            TARANTOOL_REPLICATION_SYNCHRO_QUORUM = 'N/2 + 1',
+        }
     })
     g.cluster:start()
 
@@ -186,19 +180,7 @@ end
 
 g.before_each(function()
     h.retrying({}, function()
-        t.assert_equals(set_failover_params({
-            mode = 'raft',
-            election_timeout = 1,
-            replication_timeout = 0.25,
-            synchro_timeout = 1,
-            raft_quorum = 'N/2 + 1',
-        }), {
-            mode = 'raft',
-            election_timeout = 1,
-            replication_timeout = 0.25,
-            synchro_timeout = 1,
-            raft_quorum = 'N/2 + 1',
-        })
+        t.assert_equals(set_failover_params({ mode = 'raft' }), { mode = 'raft' })
     end)
     h.retrying({}, function()
         t.assert_equals(h.list_cluster_issues(g.cluster.main_server), {})
@@ -389,30 +371,6 @@ g.after_test('test_disable_raft_failover', function()
 end)
 
 
-g.test_graphql_errors = function()
-    t.assert_error_msg_contains(
-        'failover.election_timeout must be non-negative',
-        set_failover_params,
-        {
-            election_timeout = -1,
-        }
-    )
-    t.assert_error_msg_contains(
-        'failover.synchro_timeout must be non-negative',
-        set_failover_params,
-        {
-            synchro_timeout = -1,
-        }
-    )
-    t.assert_error_msg_contains(
-        'failover.replication_timeout must be non-negative',
-        set_failover_params,
-        {
-            replication_timeout = -1,
-        }
-    )
-end
-
 g.before_test('test_bucket_ref_on_replica_prevent_bucket_move', function()
     g.cluster.main_server:exec(function()
         local vshard_router = require('vshard.router')
@@ -442,7 +400,7 @@ g.test_bucket_ref_on_replica_prevent_bucket_move = function()
 
     -- send bucket to another storage
     local bucket_counts = g.cluster:server('storage-1'):exec(function(bucket_id, replicaset_uuid)
-        assert(box.info.ro ~= true)
+        assert(not box.info.ro)
         local vshard_storage = require('vshard.storage')
         vshard_storage.bucket_send(bucket_id, replicaset_uuid)
         -- wait until sending
@@ -452,7 +410,6 @@ g.test_bucket_ref_on_replica_prevent_bucket_move = function()
         end):length()
     end, {some_bucket_id, single_replicaset_uuid})
 
-    -- t.assert_not(bucket_counts)
     t.assert_not_equals(bucket_counts, 0)
 
     -- unref bucket on replica

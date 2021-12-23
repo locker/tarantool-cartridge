@@ -736,7 +736,10 @@ local function cfg(clusterwide_config)
         })
         vars.failover_fiber:name('cartridge.stateful-failover')
     elseif failover_cfg.mode == 'raft' then
-        raft_failover.cfg(failover_cfg)
+        local ok, err = ApplyConfigError:pcall(raft_failover.cfg)
+        if not ok then
+            return nil, err
+        end
 
         vars.fencing_enabled = false
         vars.consistency_needed = false

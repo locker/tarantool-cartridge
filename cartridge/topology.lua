@@ -578,58 +578,6 @@ local function validate_failover_schema(field, topology)
             end
         end
 
-        if topology.failover.mode == 'raft' then
-            if topology.failover.raft_quorum ~= nil then
-                e_config:assert(
-                    type(topology.failover.raft_quorum) == 'string',
-                    '%s.failover.raft_quorum must be a string, got %s',
-                    field, type(topology.failover.raft_quorum)
-                )
-            end
-
-            if topology.failover.synchro_timeout ~= nil then
-                e_config:assert(
-                    type(topology.failover.synchro_timeout) == 'number',
-                    '%s.failover.synchro_timeout must be a number, got %s',
-                    field, type(topology.failover.synchro_timeout)
-                )
-
-                e_config:assert(
-                    topology.failover.synchro_timeout >= 0,
-                    '%s.failover.synchro_timeout must be non-negative, got %s',
-                    field, topology.failover.synchro_timeout
-                )
-            end
-
-            if topology.failover.replication_timeout ~= nil then
-                e_config:assert(
-                    type(topology.failover.replication_timeout) == 'number',
-                    '%s.failover.replication_timeout must be a number, got %s',
-                    field, type(topology.failover.replication_timeout)
-                )
-
-                e_config:assert(
-                    topology.failover.replication_timeout >= 0,
-                    '%s.failover.replication_timeout must be non-negative, got %s',
-                    field, topology.failover.replication_timeout
-                )
-            end
-
-            if topology.failover.election_timeout ~= nil then
-                e_config:assert(
-                    type(topology.failover.election_timeout) == 'number',
-                    '%s.failover.election_timeout must be a number, got %s',
-                    field, type(topology.failover.election_timeout)
-                )
-
-                e_config:assert(
-                    topology.failover.election_timeout >= 0,
-                    '%s.failover.election_timeout must be non-negative, got %s',
-                    field, topology.failover.election_timeout
-                )
-            end
-        end
-
         local known_keys = {
             ['mode'] = true,
             ['state_provider'] = true,
@@ -639,10 +587,6 @@ local function validate_failover_schema(field, topology)
             ['fencing_enabled'] = true,
             ['fencing_timeout'] = true,
             ['fencing_pause'] = true,
-            ['election_timeout'] = true,
-            ['replication_timeout'] = true,
-            ['synchro_timeout'] = true,
-            ['raft_quorum'] = true,
             -- For the sake of backward compatibility with v2.0.1-78
             -- See bug https://github.com/tarantool/cartridge/issues/754
             ['enabled'] = true,
@@ -836,10 +780,6 @@ local function get_failover_params(topology_cfg)
             fencing_enabled = topology_cfg.failover.fencing_enabled,
             fencing_timeout = topology_cfg.failover.fencing_timeout,
             fencing_pause = topology_cfg.failover.fencing_pause,
-            election_timeout = topology_cfg.failover.election_timeout,
-            replication_timeout = topology_cfg.failover.replication_timeout,
-            synchro_timeout = topology_cfg.failover.synchro_timeout,
-            raft_quorum = topology_cfg.failover.raft_quorum,
         }
 
         if ret.etcd2_params ~= nil then
