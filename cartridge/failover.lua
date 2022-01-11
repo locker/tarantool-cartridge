@@ -77,6 +77,8 @@ vars:new('options', {
 })
 
 vars:new('get_appointments', function() return {} end)
+vars:new('mode')
+
 
 function _G.__cartridge_failover_get_lsn(timeout)
     box.ctl.wait_ro(timeout)
@@ -505,6 +507,14 @@ function reconfigure_all(active_leaders)
 
 ::start_over::
 
+    if vars.mode == 'eventual' then
+        local appointments = vars.get_appointments()
+
+        if appointments[vars.replicaset_uuid] ~= active_leaders[vars.replicaset_uuid] then
+            log.info('Skipping failover step - cache is stale')
+            return
+        end
+    end
     local t1 = fiber.clock()
     -- WARNING: implicit yield
     local ok, err = constitute_oneself(active_leaders, {
@@ -527,13 +537,6 @@ function reconfigure_all(active_leaders)
 
     if state ~= 'RolesConfigured' then
         log.info('Skipping failover step - state is %s', state)
-        return
-    end
-
-    local appointments = vars.get_appointments()
-    if appointments[vars.replicaset_uuid] ~= nil
-    and appointments[vars.replicaset_uuid] ~= active_leaders[vars.replicaset_uuid] then
-        log.info('Skipping failover step - cache is stale')
         return
     end
 
@@ -648,6 +651,8 @@ local function cfg(clusterwide_config)
     local topology_cfg = clusterwide_config:get_readonly('topology')
     local failover_cfg = topology.get_failover_params(topology_cfg)
     local first_appointments
+
+    vars.mode = failover_cfg.mode
 
     if failover_cfg.mode == 'disabled' then
         log.info('Failover disabled')
