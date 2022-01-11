@@ -76,6 +76,8 @@ vars:new('options', {
     NETBOX_CALL_TIMEOUT = 1,
 })
 
+vars:new('get_appointments', function() return {} end)
+
 function _G.__cartridge_failover_get_lsn(timeout)
     box.ctl.wait_ro(timeout)
     return {
@@ -528,6 +530,13 @@ function reconfigure_all(active_leaders)
         return
     end
 
+    local appointments = vars.get_appointments()
+    if appointments[vars.replicaset_uuid] ~= nil
+    and appointments[vars.replicaset_uuid] ~= active_leaders[vars.replicaset_uuid] then
+        log.info('Skipping failover step - cache is stale')
+        return
+    end
+
     fiber.self().storage.is_busy = true
     confapplier.set_state('ConfiguringRoles')
 
@@ -572,6 +581,7 @@ local function failover_loop(args)
         get_appointments = 'function',
     })
 
+    vars.get_appointments = args.get_appointments
     while true do
         -- WARNING: implicit yield
         local appointments, err = FailoverError:pcall(args.get_appointments)
